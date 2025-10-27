@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "537221386707",
+    "project_id": "exptrack-a6d4e",
+    "storage_bucket": "exptrack-a6d4e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:537221386707:android:1c160ef867c24774df1f26",
+        "android_client_info": {
+          "package_name": "com.example.exp2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAk2RqStozmZ7JZ1DLNblaQjwPO8eiUlU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:537221386707:android:fdfad3c848acf7fedf1f26",
+        "android_client_info": {
+          "package_name": "com.example.exptrack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAk2RqStozmZ7JZ1DLNblaQjwPO8eiUlU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:537221386707:android:224df4ac10b9dfbadf1f26",
+        "android_client_info": {
+          "package_name": "com.example.flutter_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAk2RqStozmZ7JZ1DLNblaQjwPO8eiUlU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
