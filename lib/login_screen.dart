@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../auth_service.dart';
 import 'signup_screen.dart';
@@ -29,10 +30,12 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passCtl.text.trim(),
       );
       if (!mounted) return;
+      final user = FirebaseAuth.instance.currentUser!;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => HomeScreen(userId: user.uid)),
       );
+
     } on Exception catch (e) {
       _showSnack('Sign in failed: ${e.toString()}');
     } finally {

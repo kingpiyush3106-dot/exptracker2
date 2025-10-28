@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const RootDecider(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/home': (context) => const HomeScreen(userId: '',),
         '/forgot': (context) => const ForgotPasswordScreen(),
       },
     );
@@ -47,7 +47,7 @@ class RootDecider extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-        if (snapshot.hasData) return const HomeScreen();
+        if (snapshot.hasData) return const HomeScreen(userId: '',);
         return const LoginScreen();
       },
     );

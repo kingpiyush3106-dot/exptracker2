@@ -1,4 +1,5 @@
 import 'package:exp2/login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../auth_service.dart';
 import 'home_screen.dart';
@@ -32,7 +33,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => HomeScreen(userId: FirebaseAuth.instance.currentUser!.uid)
+),
       );
     } on Exception catch (e) {
       _showSnack('Sign up failed: ${e.toString()}');

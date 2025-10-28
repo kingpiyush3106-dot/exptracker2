@@ -1,54 +1,79 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// lib/saved_items_screen.dart
 import 'package:flutter/material.dart';
+import 'database/db_helper.dart';
 
-class SavedItemsScreen extends StatelessWidget {
-  const SavedItemsScreen({super.key});
+class SavedItemsScreen extends StatefulWidget {
+  final String userId;
+  const SavedItemsScreen({required this.userId, Key? key}) : super(key: key);
+
+  @override
+  State<SavedItemsScreen> createState() => _SavedItemsScreenState();
+}
+
+class _SavedItemsScreenState extends State<SavedItemsScreen> {
+  final DBHelper dbHelper = DBHelper();
+  List<Map<String, dynamic>> items = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadItems();
+  }
+
+  Future<void> _loadItems() async {
+    setState(() => _loading = true);
+    final data = await dbHelper.getItemsByUser(widget.userId);
+    setState(() {
+      items = data;
+      _loading = false;
+    });
+  }
+
+  Future<void> _deleteItem(int id) async {
+    await dbHelper.deleteItem(id);
+    _loadItems();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final itemsRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user!.uid)
-        .collection('items')
-        .orderBy('createdAt', descending: true);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Saved Items'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadItems,
+            tooltip: 'Refresh',
+          )
+        ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: itemsRef.snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('No items saved yet.'));
-          }
-
-          final docs = snapshot.data!.docs;
-
-          return ListView.builder(
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: ListTile(
-                  leading: const Icon(Icons.inventory_2_outlined),
-                  title: Text(data['productName'] ?? 'Unnamed Product'),
-                  subtitle: Text(
-                    'MFG: ${data['manufactureDate'] ?? 'Unknown'}\nEXP: ${data['expiryDate'] ?? 'Unknown'}',
-                  ),
-                  isThreeLine: true,
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : items.isEmpty
+              ? const Center(child: Text('No items found.'))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      child: ListTile(
+                        leading: const Icon(Icons.shopping_bag),
+                        title: Text(item['productName'] ?? 'Unnamed'),
+                        subtitle: Text('MFG: ${item['manufactureDate'] ?? '-'}\nEXP: ${item['expiryDate'] ?? '-'}'),
+                        isThreeLine: true,
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () async {
+                            await _deleteItem(item['id'] as int);
+                          },
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          );
-        },
-      ),
     );
   }
 }
