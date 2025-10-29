@@ -8,7 +8,7 @@ import 'package:exp2/text_recognition_screen.dart';
 class HomeScreen extends StatefulWidget {
   final String userId;
 
-  const HomeScreen({required this.userId, Key? key}) : super(key: key);
+  const HomeScreen({required this.userId, super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -91,11 +91,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const TextRecognitionScreen()),
-          );
-        },
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TextRecognitionScreen(userId: widget.userId),
+          ),
+        );
+      },
         backgroundColor: Colors.teal,
         child: const Icon(Icons.add),
       ),
