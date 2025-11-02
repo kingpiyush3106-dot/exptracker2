@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:exp2/database/db_helper.dart';
 import 'package:exp2/text_recognition_screen.dart';
+import 'package:exp2/notification_service.dart'; // 🔔 import notification service
 
 class HomeScreen extends StatefulWidget {
   final String userId;
@@ -43,6 +44,19 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // 🔔 Test notification method
+  Future<void> _testNotification() async {
+    final now = DateTime.now().add(const Duration(seconds: 5)); // 5 sec delay
+    await NotificationService.scheduleNotification(
+      title: 'Test Notification 🎉',
+      body: 'If you see this, your notifications are working!',
+      scheduledDate: now,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('🔔 Test notification scheduled for 5 seconds later!')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,6 +71,10 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _logout,
+          ),
+          IconButton( // 🔔 Add this new icon to trigger test notification
+            icon: const Icon(Icons.notifications_active),
+            onPressed: _testNotification,
           ),
         ],
       ),
@@ -91,13 +109,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => TextRecognitionScreen(userId: widget.userId),
-          ),
-        );
-      },
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TextRecognitionScreen(userId: widget.userId),
+            ),
+          );
+        },
         backgroundColor: Colors.teal,
         child: const Icon(Icons.add),
       ),
