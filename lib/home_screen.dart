@@ -1,10 +1,10 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:exp2/database/db_helper.dart';
 import 'package:exp2/text_recognition_screen.dart';
-import 'package:exp2/notification_service.dart'; // 🔔 import notification service
+import 'package:exp2/notification_service.dart'; // 🔔 notification service
+import 'package:timezone/timezone.dart' as tz; // ✅ timezone import
 
 class HomeScreen extends StatefulWidget {
   final String userId;
@@ -30,6 +30,18 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       items = data;
     });
+
+    // 🧩 Schedule expiry reminders for all loaded items
+    for (final item in data) {
+      if (item['expiryDate'] != null && item['expiryDate'].toString().isNotEmpty) {
+        try {
+          DateTime expiry = DateTime.parse(item['expiryDate']);
+          await _scheduleReminders(item['productName'] ?? 'Product', expiry);
+        } catch (e) {
+          print("⚠️ Could not parse expiry date: ${item['expiryDate']} → $e");
+        }
+      }
+    }
   }
 
   Future<void> _deleteItem(int id) async {
@@ -44,16 +56,46 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // 🔔 Test notification method
+  // 🔔 Automatically schedule reminders for a product
+  Future<void> _scheduleReminders(String name, DateTime expiry) async {
+    final reminders = {
+      '1 month before': expiry.subtract(const Duration(days: 30)),
+      '2 weeks before': expiry.subtract(const Duration(days: 14)),
+      '1 week before': expiry.subtract(const Duration(days: 7)),
+      '3 days before': expiry.subtract(const Duration(days: 3)),
+      '1 day before': expiry.subtract(const Duration(days: 1)),
+      'On expiry day': expiry,
+    };
+
+    for (final entry in reminders.entries) {
+      final date = entry.value;
+      if (date.isAfter(DateTime.now())) {
+        await NotificationService.scheduleNotification(
+          title: 'Expiry Reminder ⏰',
+          body: '$name expires ${entry.key}!',
+          scheduledDate: date,
+        );
+        print("✅ Scheduled '${entry.key}' notification for $name at $date");
+      }
+    }
+  }
+
+  // 🧪 Manual test notification button
   Future<void> _testNotification() async {
-    final now = DateTime.now().add(const Duration(seconds: 5)); // 5 sec delay
+    final scheduledDate = DateTime.now().add(const Duration(seconds: 5));
+
     await NotificationService.scheduleNotification(
       title: 'Test Notification 🎉',
-      body: 'If you see this, your notifications are working!',
-      scheduledDate: now,
+      body: 'If you see this, notifications are working!',
+      scheduledDate: scheduledDate,
     );
+
+    print("🔔 Test notification scheduled for: ${tz.TZDateTime.from(scheduledDate, tz.local)}");
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('🔔 Test notification scheduled for 5 seconds later!')),
+      const SnackBar(
+        content: Text('✅ Test notification set for 5 seconds later.'),
+      ),
     );
   }
 
@@ -64,24 +106,16 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Your Saved Items'),
         backgroundColor: Colors.teal,
         actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadItems),
+          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadItems,
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
-          IconButton( // 🔔 Add this new icon to trigger test notification
             icon: const Icon(Icons.notifications_active),
-            onPressed: _testNotification,
+            onPressed: _testNotification, // 🔔 test button
           ),
         ],
       ),
       body: items.isEmpty
-          ? const Center(
-              child: Text('No items saved yet'),
-            )
+          ? const Center(child: Text('No items saved yet'))
           : ListView.builder(
               itemCount: items.length,
               itemBuilder: (context, index) {

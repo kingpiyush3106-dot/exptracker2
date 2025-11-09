@@ -5,7 +5,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:exp2/database/db_helper.dart';
 import 'package:exp2/home_screen.dart';
-import 'package:exp2/notification_service.dart'; // 🧩 NEW: for reminders
+import 'package:exp2/notification_service.dart'; // 🧩 for notifications
 
 class TextRecognitionScreen extends StatefulWidget {
   final String userId;
@@ -24,17 +24,6 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
   final _expController = TextEditingController();
   final dbHelper = DBHelper();
 
-  // 🧩 NEW: for adjustable reminders
-  String _reminderChoice = '1 day before';
-  final List<String> _reminderOptions = [
-    'On expiry date',
-    '1 day before',
-    '3 days before',
-    '1 week before',
-    '2 weeks before',
-  ];
-
-  // ----------------------------------------------------------------
   Future<void> _pickImage() async {
     final picked = await _picker.pickImage(source: ImageSource.camera);
     if (picked == null) return;
@@ -102,7 +91,7 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
     }
   }
 
-  // ----------------------------------------------------------------
+  // 🧩 Updated function with improved reminder scheduling
   Future<void> _saveToLocalDB() async {
     final product = _productController.text.trim();
     final mfg = _mfgController.text.trim();
@@ -115,7 +104,7 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
       return;
     }
 
-    // Save to database
+    // Save product info in local DB
     await dbHelper.insertItem({
       'userId': widget.userId,
       'productName': product,
@@ -123,63 +112,44 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
       'expiryDate': exp,
       'imagePath': _image?.path ?? '',
     });
+
     try {
-  final expiryDate = DateTime.parse(exp); // parse expiry date
-  final reminderDate = expiryDate.subtract(const Duration(days: 14)); // 2 weeks before expiry
+      // Parse expiry date safely
+      final expiryDate = DateTime.parse(exp.replaceAll(RegExp(r'[^0-9\-\/]'), '-'));
+      final reminderOffsets = [
+        const Duration(days: 30),
+        const Duration(days: 14),
+        const Duration(days: 7),
+        const Duration(days: 3),
+        const Duration(days: 1),
+        Duration.zero,
+      ];
 
-  // Only schedule if reminder date is still in the future
-  if (reminderDate.isAfter(DateTime.now())) {
-    await NotificationService.scheduleNotification(
-      title: 'Expiry Reminder: $product',
-      body: '$product is expiring on $exp. Use it soon!',
-      scheduledDate: reminderDate,
-    );
-  }
-} catch (e) {
-  debugPrint('⚠️ Could not schedule notification: $e');
-}
+      for (final offset in reminderOffsets) {
+        final reminderTime = expiryDate.subtract(offset);
+        final now = DateTime.now();
 
+        // ⏰ If reminder time is past, show notification within 5 seconds
+        final actualTime = reminderTime.isBefore(now)
+            ? now.add(const Duration(seconds: 5))
+            : reminderTime;
 
-    // 🧩 NEW: schedule reminder based on user selection
-    try {
-      DateTime expDate = DateTime.parse(exp.replaceAll(RegExp(r'[^0-9\-\/]'), '-'));
-      Duration reminderOffset;
+        await NotificationService.scheduleNotification(
+          title: 'Expiry Reminder: $product',
+          body: offset == Duration.zero
+              ? '$product expires today! Please use it soon.'
+              : '$product will expire on $exp. Use it before it’s too late!',
+          scheduledDate: actualTime,
+        );
 
-      switch (_reminderChoice) {
-        case 'On expiry date':
-          reminderOffset = Duration.zero;
-          break;
-        case '1 day before':
-          reminderOffset = const Duration(days: 1);
-          break;
-        case '3 days before':
-          reminderOffset = const Duration(days: 3);
-          break;
-        case '1 week before':
-          reminderOffset = const Duration(days: 7);
-          break;
-        case '2 weeks before':
-          reminderOffset = const Duration(days: 14);
-          break;
-        default:
-          reminderOffset = const Duration(days: 1);
+        debugPrint('🔔 Reminder scheduled for $actualTime');
       }
-
-      final reminderTime = expDate.subtract(reminderOffset);
-
-      await NotificationService.scheduleNotification(
-        title: 'Expiry Reminder',
-        body: '$product expires on $exp',
-        scheduledDate: reminderTime,
-      );
-
-      debugPrint('🔔 Reminder scheduled for $reminderTime');
     } catch (e) {
-      debugPrint('⚠️ Could not schedule reminder: $e');
+      debugPrint('⚠️ Could not schedule reminders: $e');
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✅ Item saved locally! Reminder scheduled.')),
+      const SnackBar(content: Text('✅ Item saved & reminders scheduled!')),
     );
 
     if (mounted) {
@@ -198,13 +168,10 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
     super.dispose();
   }
 
-  // ----------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Product (Scan or Manual)'),
-      ),
+      appBar: AppBar(title: const Text('Add Product (Scan or Manual)')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -247,20 +214,6 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
                       hintText: 'e.g. 12/12/2025',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.calendar_month),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // 🧩 NEW: Reminder dropdown
-                  DropdownButtonFormField<String>(
-                    value: _reminderChoice,
-                    items: _reminderOptions
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                    onChanged: (value) => setState(() => _reminderChoice = value!),
-                    decoration: const InputDecoration(
-                      labelText: 'Reminder Time',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.notifications),
                     ),
                   ),
                   const SizedBox(height: 20),

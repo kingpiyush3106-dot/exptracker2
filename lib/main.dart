@@ -7,12 +7,16 @@ import 'signup_screen.dart';
 import 'home_screen.dart';
 import 'forgot_password_screen.dart';
 import 'package:exp2/notification_service.dart'; // ✅ your notification class
+import 'package:timezone/data/latest.dart' as tz; // ✅ added timezone import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // ✅ Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // ✅ Initialize timezone data (important for correct scheduling)
+  tz.initializeTimeZones();
 
   // ✅ Initialize notification service
   await NotificationService.init();
@@ -55,7 +59,8 @@ class RootDecider extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
         if (snapshot.hasData) return const HomeScreen(userId: '');
         return const LoginScreen();
