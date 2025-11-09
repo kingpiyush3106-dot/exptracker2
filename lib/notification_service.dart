@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'dart:io' show Platform;
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
@@ -19,11 +20,17 @@ class NotificationService {
     // Initialize time zones
     tz.initializeTimeZones();
 
-    // ⚙️ Android initialization
+    // ⚙️ Initialization settings for Android and iOS
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const settings = InitializationSettings(android: android);
+    const ios = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
 
-    // Initialize plugin
+    const settings = InitializationSettings(android: android, iOS: ios);
+
+    // Initialize the plugin
     await _notifications.initialize(settings);
 
     // ✅ Create Android notification channel
@@ -33,16 +40,20 @@ class NotificationService {
         ?.createNotificationChannel(_channel);
 
     // ✅ Ask for Android 13+ permission
-    await _notifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    if (Platform.isAndroid) {
+      final androidInfo = _notifications.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+     await androidInfo?.requestNotificationsPermission();
 
-    // ✅ Ask iOS permission (optional)
-    await _notifications
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
+    }
+
+    // ✅ Ask iOS permission
+    if (Platform.isIOS) {
+      final iosInfo = _notifications
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>();
+      await iosInfo?.requestPermissions(alert: true, badge: true, sound: true);
+    }
 
     print("✅ NotificationService initialized successfully!");
   }

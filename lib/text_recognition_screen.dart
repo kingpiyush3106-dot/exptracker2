@@ -112,6 +112,8 @@ class _TextRecognitionScreenState extends State<TextRecognitionScreen> {
       'expiryDate': exp,
       'imagePath': _image?.path ?? '',
     });
+    // 🧠 Debug log to confirm scheduling
+debugPrint("🧠 Scheduling reminders for product: $product, expiry: $exp");
 
     try {
       // Parse expiry date safely

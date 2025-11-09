@@ -1,6 +1,8 @@
 // lib/database/db_helper.dart
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import '../notification_service.dart';
+import 'package:intl/intl.dart';
 
 class DBHelper {
   static final DBHelper _instance = DBHelper._internal();
@@ -56,7 +58,33 @@ class DBHelper {
   /// Insert a local item. Returns inserted row id.
   Future<int> insertItem(Map<String, dynamic> item) async {
     final db = await database;
-    return await db.insert(tableItems, item, conflictAlgorithm: ConflictAlgorithm.replace);
+    final id = await db.insert(
+      tableItems,
+      item,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    // ✅ Schedule expiry reminders (after successful insert)
+    try {
+      if (item.containsKey(colExpiryDate) && item[colExpiryDate] != null) {
+        final expiryDateString = item[colExpiryDate];
+        if (expiryDateString != null && expiryDateString.toString().isNotEmpty) {
+          final expiryDate = DateTime.parse(expiryDateString);
+          final productName = item[colProductName] ?? 'Unknown Product';
+
+          await NotificationService.scheduleExpiryReminders(
+            productName: productName,
+            expiryDate: expiryDate,
+          );
+
+          print("🕒 Notifications scheduled for $productName (expiry: $expiryDate)");
+        }
+      }
+    } catch (e) {
+      print("⚠️ Error scheduling notification: $e");
+    }
+
+    return id;
   }
 
   /// Fetch all items for a given userId.

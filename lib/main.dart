@@ -21,6 +21,7 @@ void main() async {
   // ✅ Initialize notification service
   await NotificationService.init();
 
+
   // ✅ Run the app
   runApp(const MyApp());
 }
